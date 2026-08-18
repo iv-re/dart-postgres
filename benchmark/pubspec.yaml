@@ -1,0 +1,11 @@
+name: benchmark
+description: Benchmarks for the PostgreSQL client.
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.13.0
+
+dependencies:
+  pg: any
+  postgres: ^3.5.12

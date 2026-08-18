@@ -1,0 +1,12 @@
+name: postgres_workspace
+publish_to: none
+
+environment:
+  sdk: ^3.13.0
+
+workspace:
+  - packages/pg
+  - benchmark
+
+dev_dependencies:
+  pusk_lints: ^1.0.0
