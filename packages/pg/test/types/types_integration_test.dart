@@ -243,6 +243,50 @@ void main() {
           ).equals('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11');
         },
       );
+
+      testWithClient(
+        'round-trips jsonb using raw string and list parameters',
+        (client) async {
+          await client.simpleQuery('''
+            CREATE TEMP TABLE jsonb_param_test (
+              id SERIAL PRIMARY KEY,
+              data JSONB
+            );
+          ''');
+
+          // Insert raw JSON string
+          await client.query(
+            r'INSERT INTO jsonb_param_test (data) VALUES ($1);',
+            ['{"raw_string": true, "items": [1, 2]}'],
+          );
+
+          // Insert JSON array (List)
+          await client.query(
+            r'INSERT INTO jsonb_param_test (data) VALUES ($1);',
+            [
+              [
+                {'role': 'system', 'content': 'prompt'},
+                {'role': 'user', 'content': 'hello'},
+              ],
+            ],
+          );
+
+          final rows = await client.simpleQuery(
+            'SELECT data FROM jsonb_param_test ORDER BY id;',
+          );
+          check(rows.length).equals(2);
+
+          check(rows[0].json<Map<String, Object?>>('data')).deepEquals({
+            'raw_string': true,
+            'items': [1, 2],
+          });
+
+          check(rows[1].json<List<Object?>>('data')).deepEquals([
+            {'role': 'system', 'content': 'prompt'},
+            {'role': 'user', 'content': 'hello'},
+          ]);
+        },
+      );
     });
 
     group('temporal types', () {

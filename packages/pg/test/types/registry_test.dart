@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:checks/checks.dart';
@@ -93,6 +94,43 @@ void main() {
       check(encoded[1]!).deepEquals('test'.codeUnits);
       check(encoded[2]!).deepEquals([1]);
       check(encoded[3]).isNull();
+    });
+
+    test('encodeValue encodes jsonb with version 1 prefix', () {
+      final reg = PgTypeRegistry.defaults;
+
+      // String parameter
+      final encodedStr = reg.encodeValue('{"a": 1}', targetOid: .jsonb);
+      check(encodedStr).isNotNull();
+      check(encodedStr![0]).equals(1);
+      check(utf8.decode(Uint8List.sublistView(encodedStr, 1)))
+          .equals('{"a": 1}');
+
+      // List parameter (JSON array)
+      final encodedList = reg.encodeValue([1, 2, 'three'], targetOid: .jsonb);
+      check(encodedList).isNotNull();
+      check(encodedList![0]).equals(1);
+      check(utf8.decode(Uint8List.sublistView(encodedList, 1)))
+          .equals('[1,2,"three"]');
+
+      // Map parameter
+      final encodedMap = reg.encodeValue({'key': 'value'}, targetOid: .jsonb);
+      check(encodedMap).isNotNull();
+      check(encodedMap![0]).equals(1);
+      check(utf8.decode(Uint8List.sublistView(encodedMap, 1)))
+          .equals('{"key":"value"}');
+    });
+
+    test('encodeValue encodes json without version 1 prefix', () {
+      final reg = PgTypeRegistry.defaults;
+
+      final encodedStr = reg.encodeValue('{"a": 1}', targetOid: .json);
+      check(encodedStr).isNotNull();
+      check(utf8.decode(encodedStr!)).equals('{"a": 1}');
+
+      final encodedList = reg.encodeValue([1, 2], targetOid: .json);
+      check(encodedList).isNotNull();
+      check(utf8.decode(encodedList!)).equals('[1,2]');
     });
 
     test('throws ArgumentError on unsupported type', () {

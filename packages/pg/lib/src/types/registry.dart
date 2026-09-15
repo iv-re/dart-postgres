@@ -68,6 +68,16 @@ class PgTypeRegistry {
   }) {
     if (value == null) return null;
 
+    if (targetOid == .jsonb) {
+      final jsonStr = value is String ? value : jsonEncode(value);
+      return const JsonbCodec().encode(jsonStr, isBinary: isBinary);
+    }
+
+    if (targetOid == .json) {
+      final jsonStr = value is String ? value : jsonEncode(value);
+      return const JsonCodec().encode(jsonStr, isBinary: isBinary);
+    }
+
     switch (value) {
       case final bool v:
         return const BoolCodec().encode(v, isBinary: isBinary);
