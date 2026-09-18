@@ -217,7 +217,8 @@ class PgClient implements PgSession {
     bool deferrable = false,
     Context? ctx,
   }) {
-    return _connection.transaction(
+    return PgTransaction.run(
+      this,
       block,
       isolationLevel: isolationLevel,
       readOnly: readOnly,

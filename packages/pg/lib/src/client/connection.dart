@@ -343,9 +343,11 @@ class PgConnection implements PgSession {
     _queue.add(RowsOperation(completer: completer));
     _sendAll([
       ParseMessage(query: sql),
+      // TODO: Introduce PgTyped to support mixed parameterFormatCodes
+      // (binary for explicitly typed parameters, text for unspecified).
       BindMessage(
-        parameters: _typeRegistry.encodeParameters(params),
-        parameterFormatCodes: const [1],
+        parameters: _typeRegistry.encodeParameters(params, isBinary: false),
+        parameterFormatCodes: const [0],
       ),
       const DescribeMessage.portal(),
       const ExecuteMessage(),
@@ -379,9 +381,11 @@ class PgConnection implements PgSession {
     } else {
       _sendAll([
         ParseMessage(query: sql),
+        // TODO: Introduce PgTyped to support mixed parameterFormatCodes
+        // (binary for explicitly typed parameters, text for unspecified).
         BindMessage(
-          parameters: _typeRegistry.encodeParameters(params),
-          parameterFormatCodes: const [1],
+          parameters: _typeRegistry.encodeParameters(params, isBinary: false),
+          parameterFormatCodes: const [0],
         ),
         const DescribeMessage.portal(),
         const ExecuteMessage(),
@@ -638,23 +642,16 @@ class PgConnection implements PgSession {
     bool readOnly = false,
     bool deferrable = false,
     Context? ctx,
-  }) async {
+  }) {
     _ensureOpen();
-    final tx = PgTransaction(this);
-    await tx.begin(
+    return PgTransaction.run(
+      this,
+      block,
       isolationLevel: isolationLevel,
       readOnly: readOnly,
       deferrable: deferrable,
       ctx: ctx,
     );
-    try {
-      final result = await block(tx);
-      await tx.commit(ctx: ctx);
-      return result;
-    } catch (error, stackTrace) {
-      await tx.rollback(ctx: ctx);
-      Error.throwWithStackTrace(error, stackTrace);
-    }
   }
 
   /// Executes a pipelined batch of queries in a single TCP socket payload.

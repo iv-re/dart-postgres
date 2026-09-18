@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ctx/ctx.dart';
+import 'package:pg/src/client/client.dart';
 import 'package:pg/src/client/config.dart';
 import 'package:pg/src/client/connection.dart';
 import 'package:pg/src/client/copy.dart';
@@ -79,7 +80,39 @@ class PgTransaction implements PgSession {
     if (_session case final PgConnection conn) {
       return conn.transactionStatus;
     }
+    if (_session case final PgClient client) {
+      return client.transactionStatus;
+    }
     return _isCompleted ? .idle : .inTransaction;
+  }
+
+  /// Executes a managed transaction block on [session].
+  ///
+  /// Begins the transaction, executes [block], and commits on success.
+  /// Automatically rolls back if [block] throws an error.
+  static Future<T> run<T>(
+    PgSession session,
+    Future<T> Function(PgTransaction tx) block, {
+    PgIsolationLevel? isolationLevel,
+    bool readOnly = false,
+    bool deferrable = false,
+    Context? ctx,
+  }) async {
+    final tx = PgTransaction(session);
+    await tx.begin(
+      isolationLevel: isolationLevel,
+      readOnly: readOnly,
+      deferrable: deferrable,
+      ctx: ctx,
+    );
+    try {
+      final result = await block(tx);
+      await tx.commit(ctx: ctx);
+      return result;
+    } catch (error, stackTrace) {
+      await tx.rollback(ctx: ctx);
+      Error.throwWithStackTrace(error, stackTrace);
+    }
   }
 
   /// Begins the transaction (or creates a nested savepoint if already active).

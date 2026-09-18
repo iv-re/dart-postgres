@@ -522,6 +522,34 @@ void main() {
           check(row.bigint('c_min_bigint')).equals(minBigInt);
         },
       );
+
+      testWithClient(
+        'inserts integers into smallint and bigint columns in unnamed mode',
+        (client) async {
+          await client.simpleQuery('''
+            CREATE TEMP TABLE unnamed_int_test (
+              c_smallint SMALLINT,
+              c_int INT,
+              c_bigint BIGINT
+            );
+          ''');
+
+          await client.query(
+            r'INSERT INTO unnamed_int_test VALUES ($1, $2, $3);',
+            [1, 200, 3000],
+            mode: .unnamed,
+          );
+
+          final rows = await client.simpleQuery(
+            'SELECT * FROM unnamed_int_test LIMIT 1;',
+          );
+          check(rows.length).equals(1);
+          final row = rows.first;
+          check(row.int('c_smallint')).equals(1);
+          check(row.int('c_int')).equals(200);
+          check(row.int('c_bigint')).equals(3000);
+        },
+      );
     });
   });
 }

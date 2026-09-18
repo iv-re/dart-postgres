@@ -281,5 +281,19 @@ void main() {
         check(rows.first.string('val')).equals('poly');
       },
     );
+
+    testWithClient(
+      'caches and reuses prepared statements within transaction',
+      (client) async {
+        await client.transaction((tx) async {
+          final stmt1 = await tx.prepare(r'SELECT $1::int * 2 as doubled');
+          final stmt2 = await tx.prepare(r'SELECT $1::int * 2 as doubled');
+          check(identical(stmt1, stmt2)).equals(true);
+
+          final res = await tx.query(r'SELECT $1::int * 2 as doubled', [21]);
+          check(res[0].string('doubled')).equals('42');
+        });
+      },
+    );
   });
 }
