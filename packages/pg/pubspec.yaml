@@ -1,6 +1,6 @@
 name: pg
 description: PostgreSQL client for Dart.
-version: 0.1.1
+version: 0.1.2
 homepage: https://github.com/iv-re/dart-postgres
 repository: https://github.com/iv-re/dart-postgres/tree/main/packages/pg
 issue_tracker: https://github.com/iv-re/dart-postgres/issues
